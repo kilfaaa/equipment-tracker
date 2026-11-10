@@ -1,9 +1,9 @@
 from app.exceptions import ConflictError, NotFoundError
-from app.repositories.employees import EmployeeRepository, EmployeeRow
+from app.repositories.employees import EmployeeRepositoryProtocol, EmployeeRow
 
 
 class EmployeeService:
-    def __init__(self, employee_repo: EmployeeRepository) -> None:
+    def __init__(self, employee_repo: EmployeeRepositoryProtocol) -> None:
         self.employee_repo = employee_repo
 
     def get_employee(self, employee_id: int) -> EmployeeRow:

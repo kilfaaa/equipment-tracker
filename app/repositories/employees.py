@@ -1,9 +1,19 @@
-from typing import Any
+from typing import Any, Protocol
 
 from psycopg import Connection
 from psycopg.rows import DictRow
 
 EmployeeRow = dict[str, Any]
+
+
+class EmployeeRepositoryProtocol(Protocol):
+    def get_by_id(self, employee_id: int) -> EmployeeRow | None: ...
+
+    def get_by_email(self, email: str) -> EmployeeRow | None: ...
+
+    def list_all(self) -> list[EmployeeRow]: ...
+
+    def create(self, name: str, email: str) -> EmployeeRow: ...
 
 
 class EmployeeRepository:
