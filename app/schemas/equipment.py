@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -9,14 +10,14 @@ class EquipmentCreate(BaseModel):
 
     @field_validator("name", mode="before")
     @classmethod
-    def clean_name(cls, value):
+    def clean_name(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.strip()
         return value
 
     @field_validator("inventory_number", mode="before")
     @classmethod
-    def normalize_inventory_number(cls, value):
+    def normalize_inventory_number(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.strip().upper()
         return value

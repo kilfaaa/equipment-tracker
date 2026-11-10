@@ -1,14 +1,16 @@
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import Depends
 from psycopg import Connection
+from psycopg.rows import DictRow
 
 from app.database import get_connection
 from app.repositories.employees import EmployeeRepository
 from app.services.employees import EmployeeService
 
 
-def get_conn():
+def get_conn() -> Iterator[Connection[DictRow]]:
     conn = get_connection()
     try:
         yield conn
@@ -20,7 +22,7 @@ def get_conn():
         conn.close()
 
 
-ConnDep = Annotated[Connection, Depends(get_conn, scope="function")]
+ConnDep = Annotated[Connection[DictRow], Depends(get_conn, scope="function")]
 
 
 def get_employee_service(conn: ConnDep) -> EmployeeService:

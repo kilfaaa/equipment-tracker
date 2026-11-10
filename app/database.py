@@ -1,10 +1,11 @@
 import os
 
 import psycopg
-from psycopg.rows import dict_row
+from psycopg import Connection
+from psycopg.rows import DictRow, dict_row
 
 
-def get_connection():
+def get_connection() -> Connection[DictRow]:
     database_url = os.getenv("DATABASE_URL")
     if database_url is None:
         raise RuntimeError("Переменная окружения DATABASE_URL не задана")

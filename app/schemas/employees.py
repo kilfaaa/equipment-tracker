@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
@@ -9,21 +10,21 @@ class EmployeeCreate(BaseModel):
 
     @field_validator("name", mode="before")
     @classmethod
-    def clean_name(cls, value):
+    def clean_name(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.strip()
         return value
 
     @field_validator("email", mode="before")
     @classmethod
-    def normalize_email(cls, value):
+    def normalize_email(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.strip().lower()
         return value
 
     @field_validator("email")
     @classmethod
-    def check_email_length(cls, value):
+    def check_email_length(cls, value: str) -> str:
         if len(value) > 254:
             raise ValueError("Email не может быть длиннее 254 символов.")
         return value
