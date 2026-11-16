@@ -4,6 +4,10 @@ from typing import Protocol, TypedDict, cast
 from psycopg import Connection
 from psycopg.rows import DictRow
 
+from psycopg.errors import UniqueViolation
+
+from app.exceptions import ConflictError
+
 
 class LoanRow(TypedDict):
     id: int
@@ -37,12 +41,15 @@ class LoanRepository:
 
     def create(self, employee_id: int, equipment_id: int) -> LoanRow:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO loans (employee_id, equipment_id, issued_at) "
-                "VALUES (%s, %s, now()) "
-                "RETURNING id, employee_id, equipment_id, issued_at, returned_at",
-                (employee_id, equipment_id),
-            )
+            try:
+                cur.execute(
+                    "INSERT INTO loans (employee_id, equipment_id, issued_at) "
+                    "VALUES (%s, %s, now()) "
+                    "RETURNING id, employee_id, equipment_id, issued_at, returned_at",
+                    (employee_id, equipment_id),
+                )
+            except UniqueViolation as exc:
+                raise ConflictError("Оборудование уже выдано") from exc
             row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")

@@ -3,6 +3,10 @@ from typing import Protocol, TypedDict, cast
 from psycopg import Connection
 from psycopg.rows import DictRow
 
+from psycopg.errors import UniqueViolation
+
+from app.exceptions import ConflictError
+
 
 class EquipmentRow(TypedDict):
     id: int
@@ -48,11 +52,16 @@ class EquipmentRepository:
 
     def create(self, name: str, inventory_number: str) -> EquipmentRow:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO equipment (name, inventory_number) VALUES (%s, %s) "
-                "RETURNING id, name, inventory_number",
-                (name, inventory_number),
-            )
+            try:
+                cur.execute(
+                    "INSERT INTO equipment (name, inventory_number) VALUES (%s, %s) "
+                    "RETURNING id, name, inventory_number",
+                    (name, inventory_number),
+                )
+            except UniqueViolation as exc:
+                raise ConflictError(
+                    "Оборудование с таким инвентарным номером уже существует"
+                ) from exc
             row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")

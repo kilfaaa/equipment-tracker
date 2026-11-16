@@ -3,6 +3,10 @@ from typing import Protocol, TypedDict, cast
 from psycopg import Connection
 from psycopg.rows import DictRow
 
+from psycopg.errors import UniqueViolation
+
+from app.exceptions import ConflictError
+
 
 class EmployeeRow(TypedDict):
     id: int
@@ -60,11 +64,14 @@ class EmployeeRepository:
 
     def create(self, name: str, email: str) -> EmployeeRow:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO employees (name, email) VALUES (%s, %s) "
-                "RETURNING id, name, email, is_active",
-                (name, email),
-            )
+            try:
+                cur.execute(
+                    "INSERT INTO employees (name, email) VALUES (%s, %s) "
+                    "RETURNING id, name, email, is_active",
+                    (name, email),
+                )
+            except UniqueViolation as exc:
+                raise ConflictError("Сотрудник с таким Email уже существует") from exc
             row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")
