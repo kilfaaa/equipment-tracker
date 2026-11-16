@@ -31,3 +31,58 @@ def test_get_employee_not_found() -> None:
 
     with pytest.raises(NotFoundError):
         service.get_employee(999)
+
+
+def test_deactivate_employee_success() -> None:
+    employees = FakeEmployeeRepository()
+    service = EmployeeService(employees, FakeLoanRepository())
+    employees.create("Иван", "ivan@example.com")
+
+    result = service.deactivate_employee(1)
+
+    assert result["is_active"] is False
+    assert employees.employees[0]["is_active"] is False
+
+
+def test_deactivate_employee_twice_returns_current_state() -> None:
+    employees = FakeEmployeeRepository()
+    service = EmployeeService(employees, FakeLoanRepository())
+    employees.create("Иван", "ivan@example.com")
+
+    service.deactivate_employee(1)
+    again = service.deactivate_employee(1)
+
+    assert again["is_active"] is False
+
+
+def test_deactivate_employee_with_active_loan_forbidden() -> None:
+    employees = FakeEmployeeRepository()
+    loans = FakeLoanRepository()
+    service = EmployeeService(employees, loans)
+    employees.create("Иван", "ivan@example.com")
+    loans.create(1, 1)
+
+    with pytest.raises(ConflictError):
+        service.deactivate_employee(1)
+
+    assert employees.employees[0]["is_active"] is True
+
+
+def test_deactivate_employee_after_return_allowed() -> None:
+    employees = FakeEmployeeRepository()
+    loans = FakeLoanRepository()
+    service = EmployeeService(employees, loans)
+    employees.create("Иван", "ivan@example.com")
+    loan = loans.create(1, 1)
+    loans.mark_returned(loan["id"])
+
+    result = service.deactivate_employee(1)
+
+    assert result["is_active"] is False
+
+
+def test_deactivate_employee_not_found() -> None:
+    service = EmployeeService(FakeEmployeeRepository(), FakeLoanRepository())
+
+    with pytest.raises(NotFoundError):
+        service.deactivate_employee(999)

@@ -12,6 +12,8 @@ from app.repositories.loans import LoanRepository
 from app.services.employees import EmployeeService
 from app.services.equipment import EquipmentService
 
+from app.services.loans import LoanService
+
 
 def get_conn() -> Iterator[Connection[DictRow]]:
     conn = get_connection()
@@ -40,3 +42,14 @@ def get_equipment_service(conn: ConnDep) -> EquipmentService:
 
 
 EquipmentServiceDep = Annotated[EquipmentService, Depends(get_equipment_service)]
+
+
+def get_loan_service(conn: ConnDep) -> LoanService:
+    return LoanService(
+        LoanRepository(conn),
+        EmployeeRepository(conn),
+        EquipmentRepository(conn),
+    )
+
+
+LoanServiceDep = Annotated[LoanService, Depends(get_loan_service)]

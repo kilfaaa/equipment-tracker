@@ -20,3 +20,15 @@ def list_employees(service: EmployeeServiceDep) -> list[EmployeeRow]:
 @router.get("/{employee_id}", response_model=EmployeeRead)
 def get_employee(employee_id: int, service: EmployeeServiceDep) -> EmployeeRow:
     return service.get_employee(employee_id)
+
+
+@router.patch(
+    "/{employee_id}/deactivate",
+    response_model=EmployeeRead,
+    responses={
+        404: {"description": "Сотрудник не найден"},
+        409: {"description": "У сотрудника есть активные выдачи"},
+    },
+)
+def deactivate_employee(employee_id: int, service: EmployeeServiceDep) -> EmployeeRow:
+    return service.deactivate_employee(employee_id)
