@@ -1,3 +1,6 @@
+from app.repositories.equipment import EquipmentRepository
+from app.services.equipment import EquipmentService
+
 from collections.abc import Iterator
 from typing import Annotated
 
@@ -30,3 +33,10 @@ def get_employee_service(conn: ConnDep) -> EmployeeService:
 
 
 EmployeeServiceDep = Annotated[EmployeeService, Depends(get_employee_service)]
+
+
+def get_equipment_service(conn: ConnDep) -> EquipmentService:
+    return EquipmentService(EquipmentRepository(conn))
+
+
+EquipmentServiceDep = Annotated[EquipmentService, Depends(get_equipment_service)]

@@ -2,10 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.exceptions import ConflictError, NotFoundError
-from app.routers import employees
+from app.routers import employees, equipment
 
 app = FastAPI()
 app.include_router(employees.router)
+app.include_router(equipment.router)
 
 
 @app.exception_handler(NotFoundError)
