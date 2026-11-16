@@ -7,13 +7,19 @@ from app.dependencies import get_employee_service, get_equipment_service
 from app.main import app
 from app.services.employees import EmployeeService
 from app.services.equipment import EquipmentService
-from tests.fakes import FakeEmployeeRepository, FakeEquipmentRepository
+from tests.fakes import (
+    FakeEmployeeRepository,
+    FakeEquipmentRepository,
+    FakeLoanRepository,
+)
 
 
 @pytest.fixture
 def api_client() -> Iterator[tuple[TestClient, FakeEmployeeRepository]]:
     repo = FakeEmployeeRepository()
-    app.dependency_overrides[get_employee_service] = lambda: EmployeeService(repo)
+    app.dependency_overrides[get_employee_service] = lambda: EmployeeService(
+        repo, FakeLoanRepository()
+    )
     client = TestClient(app)
     yield client, repo
     app.dependency_overrides.clear()

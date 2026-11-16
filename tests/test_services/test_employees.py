@@ -2,12 +2,12 @@ import pytest
 
 from app.exceptions import ConflictError, NotFoundError
 from app.services.employees import EmployeeService
-from tests.fakes import FakeEmployeeRepository
+from tests.fakes import FakeEmployeeRepository, FakeLoanRepository
 
 
 def test_create_employee() -> None:
     repo = FakeEmployeeRepository()
-    service = EmployeeService(repo)
+    service = EmployeeService(repo, FakeLoanRepository())
 
     employee = service.create_employee("Иван", "ivan@example.com")
 
@@ -17,7 +17,7 @@ def test_create_employee() -> None:
 
 def test_create_employee_duplicate_email() -> None:
     repo = FakeEmployeeRepository()
-    service = EmployeeService(repo)
+    service = EmployeeService(repo, FakeLoanRepository())
 
     service.create_employee("Иван", "ivan@example.com")
 
@@ -27,7 +27,7 @@ def test_create_employee_duplicate_email() -> None:
 
 def test_get_employee_not_found() -> None:
     repo = FakeEmployeeRepository()
-    service = EmployeeService(repo)
+    service = EmployeeService(repo, FakeLoanRepository())
 
     with pytest.raises(NotFoundError):
         service.get_employee(999)

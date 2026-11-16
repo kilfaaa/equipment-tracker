@@ -37,6 +37,13 @@ class FakeEmployeeRepository:
     def get_for_update(self, employee_id: int) -> EmployeeRow | None:
         return self.get_by_id(employee_id)
 
+    def deactivate(self, employee_id: int) -> EmployeeRow:
+        employee = self.get_by_id(employee_id)
+        if employee is None:
+            raise RuntimeError("Сотрудник не найден")
+        employee["is_active"] = False
+        return employee
+
 
 class FakeEquipmentRepository:
     def __init__(self) -> None:

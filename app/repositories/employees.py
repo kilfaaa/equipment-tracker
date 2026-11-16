@@ -22,6 +22,8 @@ class EmployeeRepositoryProtocol(Protocol):
 
     def get_for_update(self, employee_id: int) -> EmployeeRow | None: ...
 
+    def deactivate(self, employee_id: int) -> EmployeeRow: ...
+
 
 class EmployeeRepository:
     def __init__(self, conn: Connection[DictRow]) -> None:
@@ -66,4 +68,16 @@ class EmployeeRepository:
             row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")
+            return cast(EmployeeRow, row)
+
+    def deactivate(self, employee_id: int) -> EmployeeRow:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "UPDATE employees SET is_active = FALSE WHERE id = %s "
+                "RETURNING id, name, email, is_active",
+                (employee_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise RuntimeError("UPDATE ... RETURNING не вернул строку")
             return cast(EmployeeRow, row)
