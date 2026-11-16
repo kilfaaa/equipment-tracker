@@ -1,9 +1,13 @@
-from typing import Any, Protocol
+from typing import Protocol, TypedDict, cast
 
 from psycopg import Connection
 from psycopg.rows import DictRow
 
-EquipmentRow = dict[str, Any]
+
+class EquipmentRow(TypedDict):
+    id: int
+    name: str
+    inventory_number: str
 
 
 class EquipmentRepositoryProtocol(Protocol):
@@ -26,7 +30,7 @@ class EquipmentRepository:
                 "SELECT id, name, inventory_number FROM equipment WHERE id = %s",
                 (equipment_id,),
             )
-            return cur.fetchone()
+            return cast(EquipmentRow | None, cur.fetchone())
 
     def get_by_inventory_number(self, inventory_number: str) -> EquipmentRow | None:
         with self.conn.cursor() as cur:
@@ -35,12 +39,12 @@ class EquipmentRepository:
                 "WHERE inventory_number = %s",
                 (inventory_number,),
             )
-            return cur.fetchone()
+            return cast(EquipmentRow | None, cur.fetchone())
 
     def list_all(self) -> list[EquipmentRow]:
         with self.conn.cursor() as cur:
             cur.execute("SELECT id, name, inventory_number FROM equipment ORDER BY id")
-            return cur.fetchall()
+            return cast(list[EquipmentRow], cur.fetchall())
 
     def create(self, name: str, inventory_number: str) -> EquipmentRow:
         with self.conn.cursor() as cur:
@@ -49,7 +53,7 @@ class EquipmentRepository:
                 "RETURNING id, name, inventory_number",
                 (name, inventory_number),
             )
-            row: EquipmentRow | None = cur.fetchone()
+            row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")
-            return row
+            return cast(EquipmentRow, row)

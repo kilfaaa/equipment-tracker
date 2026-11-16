@@ -1,9 +1,14 @@
-from typing import Any, Protocol
+from typing import Protocol, TypedDict, cast
 
 from psycopg import Connection
 from psycopg.rows import DictRow
 
-EmployeeRow = dict[str, Any]
+
+class EmployeeRow(TypedDict):
+    id: int
+    name: str
+    email: str
+    is_active: bool
 
 
 class EmployeeRepositoryProtocol(Protocol):
@@ -14,6 +19,8 @@ class EmployeeRepositoryProtocol(Protocol):
     def list_all(self) -> list[EmployeeRow]: ...
 
     def create(self, name: str, email: str) -> EmployeeRow: ...
+
+    def get_for_update(self, employee_id: int) -> EmployeeRow | None: ...
 
 
 class EmployeeRepository:
@@ -26,7 +33,7 @@ class EmployeeRepository:
                 "SELECT id, name, email, is_active FROM employees WHERE id = %s",
                 (employee_id,),
             )
-            return cur.fetchone()
+            return cast(EmployeeRow | None, cur.fetchone())
 
     def get_by_email(self, email: str) -> EmployeeRow | None:
         with self.conn.cursor() as cur:
@@ -34,12 +41,12 @@ class EmployeeRepository:
                 "SELECT id, name, email, is_active FROM employees WHERE email = %s",
                 (email,),
             )
-            return cur.fetchone()
+            return cast(EmployeeRow | None, cur.fetchone())
 
     def list_all(self) -> list[EmployeeRow]:
         with self.conn.cursor() as cur:
             cur.execute("SELECT id, name, email, is_active FROM employees ORDER BY id")
-            return cur.fetchall()
+            return cast(list[EmployeeRow], cur.fetchall())
 
     def get_for_update(self, employee_id: int) -> EmployeeRow | None:
         with self.conn.cursor() as cur:
@@ -47,7 +54,7 @@ class EmployeeRepository:
                 "SELECT id, name, email, is_active FROM employees WHERE id = %s FOR UPDATE",
                 (employee_id,),
             )
-            return cur.fetchone()
+            return cast(EmployeeRow | None, cur.fetchone())
 
     def create(self, name: str, email: str) -> EmployeeRow:
         with self.conn.cursor() as cur:
@@ -56,7 +63,7 @@ class EmployeeRepository:
                 "RETURNING id, name, email, is_active",
                 (name, email),
             )
-            row: EmployeeRow | None = cur.fetchone()
+            row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")
-            return row
+            return cast(EmployeeRow, row)
