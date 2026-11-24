@@ -1,11 +1,14 @@
 from typing import Protocol, TypedDict, cast
 
 from psycopg import Connection
-from psycopg.rows import DictRow
-
 from psycopg.errors import UniqueViolation
+from psycopg.rows import DictRow
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.exceptions import ConflictError
+from app.repositories.models import Equipment
 
 
 class EquipmentRow(TypedDict):
@@ -62,7 +65,58 @@ class EquipmentRepository:
                 raise ConflictError(
                     "Оборудование с таким инвентарным номером уже существует"
                 ) from exc
+
             row = cur.fetchone()
             if row is None:
                 raise RuntimeError("INSERT ... RETURNING не вернул строку")
             return cast(EquipmentRow, row)
+
+
+class SqlAlchemyEquipmentRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def get_by_id(self, equipment_id: int) -> EquipmentRow | None:
+        equipment = self.session.get(Equipment, equipment_id)
+        if equipment is None:
+            return None
+        return self._to_row(equipment)
+
+    def get_by_inventory_number(self, inventory_number: str) -> EquipmentRow | None:
+        stmt = select(Equipment).where(Equipment.inventory_number == inventory_number)
+        equipment = self.session.scalars(stmt).one_or_none()
+        if equipment is None:
+            return None
+        return self._to_row(equipment)
+
+    def list_all(self) -> list[EquipmentRow]:
+        stmt = select(Equipment).order_by(Equipment.id)
+        equipment_items = self.session.scalars(stmt).all()
+        return [self._to_row(equipment) for equipment in equipment_items]
+
+    def create(self, name: str, inventory_number: str) -> EquipmentRow:
+        equipment = Equipment(name=name, inventory_number=inventory_number)
+        self.session.add(equipment)
+
+        try:
+            self.session.flush()
+        except IntegrityError as exc:
+            original = exc.orig
+            if (
+                isinstance(original, UniqueViolation)
+                and original.diag.constraint_name == "equipment_inventory_number_key"
+            ):
+                raise ConflictError(
+                    "Оборудование с таким инвентарным номером уже существует"
+                ) from exc
+            raise
+
+        return self._to_row(equipment)
+
+    @staticmethod
+    def _to_row(equipment: Equipment) -> EquipmentRow:
+        return {
+            "id": equipment.id,
+            "name": equipment.name,
+            "inventory_number": equipment.inventory_number,
+        }
